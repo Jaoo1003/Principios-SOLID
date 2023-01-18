@@ -1,112 +1,89 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Alura.LeilaoOnline.WebApp.Models;
-using System;
-using Alura.LeilaoOnline.WebApp.Dados;
+using Alura.LeilaoOnline.WebApp.Services;
 
-namespace Alura.LeilaoOnline.WebApp.Controllers
-{
-    public class LeilaoController : Controller
-    {
+namespace Alura.LeilaoOnline.WebApp.Controllers {
+    public class LeilaoController : Controller {
+        IAdminService _service;
 
-        ILeilaoDao _dao;
-
-        public LeilaoController(ILeilaoDao dao)
-        {
-            _dao = dao;
+        public LeilaoController(IAdminService service) {
+            _service = service;
         }
 
-        public IActionResult Index()
-        {
-            var leiloes = _dao.BuscarTodosLeiloes();
+        public IActionResult Index() {
+            var leiloes = _service.ConsultaLeiloes();
             return View(leiloes);
-        } 
+        }
 
         [HttpGet]
-        public IActionResult Insert()
-        {
-            ViewData["Categorias"] = _dao.BuscarTodasCategorias();
+        public IActionResult Insert() {
+            ViewData["Categorias"] = _service.ConsultaCategorias();
             ViewData["Operacao"] = "Inclusão";
             return View("Form");
         }
 
         [HttpPost]
-        public IActionResult Insert(Leilao model)
-        {
-            if (ModelState.IsValid)
-            {
-                _dao.Incluir(model);
+        public IActionResult Insert(Leilao model) {
+            if (ModelState.IsValid) {
+                _service.CadastrarLeilao(model);
                 return RedirectToAction("Index");
             }
-            ViewData["Categorias"] = _dao.BuscarTodasCategorias();
+            ViewData["Categorias"] = _service.ConsultaCategorias();
             ViewData["Operacao"] = "Inclusão";
             return View("Form", model);
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
-        {
-            ViewData["Categorias"] = _dao.BuscarTodasCategorias();
+        public IActionResult Edit(int id) {
+            ViewData["Categorias"] = _service.ConsultaCategorias();
             ViewData["Operacao"] = "Edição";
-            var leilao = _dao.BuscarLeilaoPorId(id);
+            var leilao = _service.ConsultaLeilaoPorId(id);
             if (leilao == null) return NotFound();
             return View("Form", leilao);
         }
 
         [HttpPost]
-        public IActionResult Edit(Leilao model)
-        {
-            if (ModelState.IsValid)
-            {
-                _dao.Alterar(model);
+        public IActionResult Edit(Leilao model) {
+            if (ModelState.IsValid) {
+                _service.ModificarLeilao(model);
                 return RedirectToAction("Index");
             }
-            ViewData["Categorias"] = _dao.BuscarTodasCategorias();
+            ViewData["Categorias"] = _service.ConsultaCategorias();
             ViewData["Operacao"] = "Edição";
             return View("Form", model);
         }
 
         [HttpPost]
-        public IActionResult Inicia(int id)
-        {
-            var leilao = _dao.BuscarLeilaoPorId(id);
+        public IActionResult Inicia(int id) {
+            var leilao = _service.ConsultaLeilaoPorId(id);
             if (leilao == null) return NotFound();
-            if (leilao.Situacao != SituacaoLeilao.Rascunho) return StatusCode(405);
-            leilao.Situacao = SituacaoLeilao.Pregao;
-            leilao.Inicio = DateTime.Now;
-            _dao.Alterar(leilao);
+            _service.IniciaPregaoDoLeilaoComId(id);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public IActionResult Finaliza(int id)
-        {
-            var leilao = _dao.BuscarLeilaoPorId(id);
+        public IActionResult Finaliza(int id) {
+            var leilao = _service.ConsultaLeilaoPorId(id);
             if (leilao == null) return NotFound();
-            if (leilao.Situacao != SituacaoLeilao.Pregao) return StatusCode(405);
-            leilao.Situacao = SituacaoLeilao.Finalizado;
-            leilao.Termino = DateTime.Now;
-            _dao.Alterar(leilao);
+            _service.FinalizaPregaoDoLeilaoComId(id);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public IActionResult Remove(int id)
-        {
-            var leilao = _dao.BuscarLeilaoPorId(id);
+        public IActionResult Remove(int id) {
+            var leilao = _service.ConsultaLeilaoPorId(id);
             if (leilao == null) return NotFound();
-            if (leilao.Situacao == SituacaoLeilao.Pregao) return StatusCode(405);
-            _dao.Excluir(leilao);
+            _service.RemoverLeilao(leilao);
             return NoContent();
         }
 
         [HttpGet]
-        public IActionResult Pesquisa(string termo)
-        {
+        public IActionResult Pesquisa(string termo) {
             ViewData["termo"] = termo;
-            var leiloes = _dao.BuscarTodosLeiloes()
-                .Where(l => string.IsNullOrWhiteSpace(termo) || 
-                    l.Titulo.ToUpper().Contains(termo.ToUpper()) || 
+            var leiloes = _service.ConsultaLeiloes()
+                .Where(l => string.IsNullOrWhiteSpace(termo) ||
+                    l.Titulo.ToUpper().Contains(termo.ToUpper()) ||
                     l.Descricao.ToUpper().Contains(termo.ToUpper()) ||
                     l.Categoria.Descricao.ToUpper().Contains(termo.ToUpper())
                 );

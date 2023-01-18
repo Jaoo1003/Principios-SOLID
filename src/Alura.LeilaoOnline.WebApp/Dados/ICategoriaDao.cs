@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 
 namespace Alura.LeilaoOnline.WebApp.Dados {
-    public interface ICategoriaDao {
-        Categoria ConsultaCategoriaPorId(int id);
-        IEnumerable<Categoria> ConsultaCategorias();
+    public interface ICategoriaDao : IQuery<Categoria>{
     }
 }
